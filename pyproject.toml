@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coltess"
+version = "0.1.0"
+description = "Curves of Light from TESS (COLTESS): photometry tool for TESS FFIs"
+authors = [
+    { name = "Manuel Garcia", email = "alhazacod@proton.me" }
+]
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "astropy",
+    "astroquery",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipython",
+    "black",
+    "ruff",
+    "mypy",
+]
