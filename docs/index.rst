@@ -1,16 +1,57 @@
-Welcome to Coltess's documentation!
-====================================
+Coltess Documentation
+=====================
 
-**Coltess** (Curves of Light from TESS) is a photometry tool for TESS FFIs.
+.. include:: ../../README.md
+   :parser: myst_parser.sphinx_
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+API Reference
+=============
 
-   # Add references to other documentation files here
-   # For example: api
+Core Module
+-----------
 
-.. automodule:: coltess
+.. automodule:: coltess.core
    :members:
-   :undoc-members:
    :show-inheritance:
+
+Photometry Module
+-----------------
+
+.. automodule:: coltess.photometry
+   :members:
+   :show-inheritance:
+
+Catalog Module
+--------------
+
+.. automodule:: coltess.catalog
+   :members:
+   :show-inheritance:
+
+Download Module
+---------------
+
+.. automodule:: coltess.download
+   :members:
+   :show-inheritance:
+
+Analysis Module
+---------------
+
+.. automodule:: coltess.analysis
+   :members:
+   :show-inheritance:
+
+Parallel Processing Module
+---------------------------
+
+.. automodule:: coltess.parallel
+   :members:
+   :show-inheritance:
+
+Indices
+=======
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
