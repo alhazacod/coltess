@@ -1,5 +1,11 @@
+#REMOVE THIS WHEN DONE 
+notebooks/
+
+
 # Python
 __pycache__/
+examples/__pycache__/
+coltess/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -30,6 +36,7 @@ ENV/
 .idea/
 *.swp
 *.swo
+README_md_ltex.json
 
 # Jupyter
 .ipynb_checkpoints/

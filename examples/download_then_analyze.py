@@ -1,9 +1,8 @@
 from pathlib import Path
 
 from coltess.photometry import TessPhotometry
-from coltess.catalog import create_catalog, get_star_coordinates
 from coltess.download import download_tess_image
-from coltess.analysis import load_photometry_data
+from coltess.catalog import create_catalog
 
 star_name = "lambda tau"
 
@@ -26,8 +25,8 @@ for line in lines:
     fits_file = download_tess_image(line, fits_dir)
     #print(f"fits for {line} saved")
     photometry = TessPhotometry()
-    ra, dec, gaia_id = get_star_coordinates(star_name)
-    success = photometry.process_image(fits_file, catalog_file, ra, dec, output_dir = csv_dir)
+    star = create_catalog(star_name, radius_arcmin=10.0, output_file=catalog_file)
+    success = photometry.process_image(fits_file, catalog_file, star, output_dir = csv_dir)
     print(success)
     if success:
         print(f"Star found at {line}")

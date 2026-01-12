@@ -4,10 +4,10 @@ Photometry analysis for TESS data
 """
 
 import os
-import glob
 import numpy as np
 from typing import List, Optional
 import pandas as pd
+import functools
 
 from coltess.core import StarData
 
@@ -71,6 +71,7 @@ class TessPhotometry:
         self.zeropoint = zeropoint
         self.epadu = 5.22  # TESS gain
 
+    @functools.lru_cache(maxsize=128)
     def load_catalog(self, catalog_file: str):
 
         """
@@ -129,7 +130,7 @@ class TessPhotometry:
                 x, y = SkyCoord(ra, dec, unit=u.deg).to_pixel(wcs)
                 if (0 <= x < image.shape[1] and 0 <= y < image.shape[0]):
                     objects_in_frame.append((ra, dec, obj_id, x, y))
-            except:
+            except Exception as e:
                 continue
         
         if not objects_in_frame:
