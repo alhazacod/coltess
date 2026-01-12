@@ -19,7 +19,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
-    'sphinx_autodoc_typehints',
     'sphinx.ext.mathjax',
 ]
 
