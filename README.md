@@ -66,6 +66,8 @@ Core requirements:
 
 Extract a light curve for Lambda Tau in just a few lines:
 
+**Note for Windows users:** Parallel processing requires `if __name__ == '__main__'` guard in scripts. Windows + Jupyter users should use WSL or process images sequentially.
+
 ```python
 from coltess import create_catalog, get_tess_sectors, download_tess_sector_script
 from coltess import process_images_parallel, load_photometry_data
@@ -101,85 +103,8 @@ plt.show()
 
 ## Usage Examples
 
-### Example 1: Single Star Analysis
+Please refer to the examples folder.
 
-```python
-from pathlib import Path
-from coltess import create_catalog, TessPhotometry, load_photometry_data
-
-# Setup
-star = create_catalog("V* RR Lyr", radius_arcmin=5.0, output_file="rrlyr_catalog.csv")
-
-# Download a single image (example curl command)
-from coltess.download import download_tess_image
-fits_file = download_tess_image(
-    "curl -L -o image.fits https://mast.stsci.edu/...",
-    output_dir="fits_data"
-)
-
-# Run photometry
-phot = TessPhotometry(aperture_radius=10)
-success = phot.process_image(
-    fits_file,
-    catalog_file="rrlyr_catalog.csv",
-    target_star=star,
-    output_dir="results"
-)
-
-print(f"Star detected: {success}")
-```
-
-### Example 2: Parallel Processing with Custom Apertures
-
-```python
-from coltess import TessPhotometry, process_images_parallel
-
-# Initialize with custom aperture sizes
-custom_phot = TessPhotometry(
-    aperture_radius=15,
-    annulus_inner=20,
-    annulus_outer=25,
-    zeropoint=20.44
-)
-
-# Process sector in parallel
-process_images_parallel(
-    script_file="tesscurl_sector_5_ffic.sh",
-    catalog_file="catalog.csv",
-    output_dir="photometry",
-    star=my_star,
-    start_idx=0,
-    max_workers=8
-)
-```
-
-### Example 3: Periodogram Analysis
-
-```python
-from coltess import load_photometry_data, compute_periodogram
-import matplotlib.pyplot as plt
-
-# Load photometry
-times, fluxes = load_photometry_data("photometry", star)
-
-# Compute periodogram
-periodogram = compute_periodogram(
-    times, 
-    fluxes,
-    min_period=0.1,
-    max_period=10.0
-)
-
-# Plot
-plt.plot(periodogram['periods'], periodogram['power'])
-plt.xlabel("Period (days)")
-plt.ylabel("Power")
-plt.show()
-
-if 'secondary_period' in periodogram:
-    print(f"Detected period: {periodogram['secondary_period']:.4f} ± "
-          f"{periodogram['period_uncertainty']:.4f} days")
-```
 
 ## API Reference
 
