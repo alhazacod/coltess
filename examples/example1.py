@@ -21,7 +21,7 @@ process_images_parallel(
 )
 
 # 5. Load and plot light curve
-times, fluxes = load_photometry_data("photometry_results", star)
+times, fluxes, flux_errors = load_photometry_data("photometry_results", star)
 
 plt.scatter(times, fluxes)
 plt.xlabel("Julian Date")

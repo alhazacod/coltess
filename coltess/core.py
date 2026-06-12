@@ -28,6 +28,7 @@ class StarData:
     # Photometry results (optional)
     times: Optional[np.ndarray] = field(default=None, repr=False)
     fluxes: Optional[np.ndarray] = field(default=None, repr=False)
+    flux_errors: Optional[np.ndarray] = field(default=None, repr=False)
 
     # Metadata
     sector: Optional[int] = None

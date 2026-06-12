@@ -21,30 +21,30 @@ def load_photometry_data(
         csv_dir: str,
         target_star: StarData,
         max_sep_arcsec: float = 0.5 
-    ) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Load per-frame photometry CSV files and extract a target light curve.
-    
+
     For each frame, the source below a maximum angular separation is selected.
-    
+
     Parameters
     ----------
     csv_dir : str
         Directory containing per-frame CSV photometry files.
-    target_ra : float
-        Target right ascension in degrees.
-    target_dec : float
-        Target declination in degrees.
+    target_star : StarData
+        Target star with RA/Dec coordinates.
     max_sep_arcsec : float, optional
         Maximum allowed separation for a valid detection.
-    
+
     Returns
     -------
     times : numpy.ndarray
         Observation times in Julian Date.
     fluxes : numpy.ndarray
         Measured fluxes corresponding to the target.
-    
+    flux_errors : numpy.ndarray
+        1-sigma flux uncertainties corresponding to the target.
+
     Raises
     ------
     RuntimeError
@@ -58,6 +58,7 @@ def load_photometry_data(
     
     times = []
     fluxes = []
+    flux_errors = []
     
     csv_files = sorted(Path(csv_dir).glob("*.csv"))
     
@@ -77,17 +78,19 @@ def load_photometry_data(
             continue  # target not detected in this frame
         
         flux = df.loc[idx, "flux"]
+        flux_err = df.loc[idx, "flux_err"]
         date_obs = df.loc[idx, "DATE-OBS"]
-        
+
         jd = Time(date_obs, format="isot", scale="utc").jd
-        
+
         fluxes.append(flux)
+        flux_errors.append(flux_err)
         times.append(jd)
-        
+
     if not times:
         raise RuntimeError("Target not found in any CSV file.")
-    
-    return np.array(times), np.array(fluxes)
+
+    return np.array(times), np.array(fluxes), np.array(flux_errors)
 
 
 def compute_periodogram(times: List[float], fluxes: List[float], 

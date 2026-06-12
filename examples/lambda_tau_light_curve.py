@@ -66,7 +66,7 @@ def main():
     # --------------------------------------------------
     # 4. Load photometry and plot
     # --------------------------------------------------
-    jd, flux = load_photometry_data(
+    jd, flux, flux_errors = load_photometry_data(
         csv_dir=str(csv_dir),
         target_star=star,
         max_sep_arcsec=1.0,

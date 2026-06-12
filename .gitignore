@@ -31,6 +31,9 @@ venv/
 env/
 ENV/
 
+#OC
+AGENTS.md
+
 # IDE
 .vscode/
 .idea/

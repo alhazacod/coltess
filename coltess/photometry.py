@@ -69,7 +69,7 @@ class TessPhotometry:
         self.annulus_inner = annulus_inner
         self.annulus_outer = annulus_outer
         self.zeropoint = zeropoint
-        self.epadu = 5.22  # TESS gain
+        self.epadu = 5.22 # TESS gain (e-/ADU); overridden for e-/s data
 
     @functools.lru_cache(maxsize=128)
     def load_catalog(self, catalog_file: str):
@@ -122,6 +122,13 @@ class TessPhotometry:
             image = hdul[1].data
             header = hdul[1].header
             wcs = WCS(header)
+
+            # Determine effective gain for Poisson noise term
+            bunit = header.get("BUNIT", "").strip().lower()
+            if "e-/s" in bunit or "e- /s" in bunit:
+                self.epadu = header.get("EXPTIME", header.get("TINT", 200.0))
+            else:
+                self.epadu = 5.22
         
         # Filter objects in frame
         objects_in_frame = []
