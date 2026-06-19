@@ -11,7 +11,7 @@
 - 📥 **Direct FFI downloads** from MAST archive
 - 🔭 **Aperture photometry** with local background subtraction
 - ⚡ **Parallel processing** for analyzing thousands of images efficiently
-- 📊 **Periodogram analysis** using Lomb-Scargle
+- 📊 **Periodogram analysis** using Lomb-Scargle with error weighting and false alarm probability
 - 🎯 **Simple API** designed for both interactive and scripted workflows
 
 
@@ -91,10 +91,10 @@ process_images_parallel(
     star=star
 )
 
-# 5. Load and plot light curve
-times, fluxes = load_photometry_data("photometry_results", star)
+# 5. Load and plot light curve with error bars
+times, fluxes, flux_errors = load_photometry_data("photometry_results", star)
 
-plt.scatter(times, fluxes)
+plt.errorbar(times, fluxes, yerr=flux_errors, fmt="o", ms=2, capsize=0, elinewidth=0.5)
 plt.xlabel("Julian Date")
 plt.ylabel("Flux (e⁻/s)")
 plt.title(f"Light Curve: {star.name}")
@@ -173,12 +173,28 @@ Download single TESS FFI using curl command.
 #### `load_photometry_data(csv_dir, target_star, max_sep_arcsec)`
 Load light curve from photometry CSV files.
 
-**Returns:** Tuple of (times, fluxes) as numpy arrays
+**Returns:** Tuple of (times, fluxes, flux_errors) as numpy arrays
 
-#### `compute_periodogram(times, fluxes, min_period, max_period)`
-Compute Lomb-Scargle periodogram.
+#### `compute_periodogram(times, fluxes, flux_errors=None, min_period=0.1, max_period=10.0, oversampling=5.0)`
+Compute Lomb-Scargle periodogram with optional error weighting and false alarm probability.
 
-**Returns:** Dictionary with periods, power, and detected peaks
+**Parameters:**
+- `times`: Observation times (numpy array)
+- `fluxes`: Measured fluxes (numpy array)  
+- `flux_errors`: 1-sigma flux uncertainties (optional, numpy array)
+- `min_period`: Minimum period to search (days, default: 0.1)
+- `max_period`: Maximum period to search (days, default: 10.0)
+- `oversampling`: Oversampling factor for frequency grid (default: 5.0)
+
+**Returns:** Dictionary containing:
+- `periods`: Array of periods (days)
+- `power`: Array of periodogram power
+- `frequency`: Array of frequencies (1/days)
+- `peak_indices`: List of peak indices sorted by power
+- `primary_period`: Best period or None
+- `primary_period_uncertainty`: 1-sigma uncertainty or None  
+- `primary_fap`: False alarm probability (Baluev 2008) or None
+- `secondary_period`: Second best period or None
 
 ### Parallel Processing
 
@@ -218,6 +234,23 @@ Where:
 - `A_ap` = aperture area
 - `A_ann` = annulus area
 - `σ_sky` = background standard deviation
+
+
+### Periodogram Analysis
+
+The Lomb-Scargle periodogram is used to detect periodic signals in unevenly sampled time series data. Coltess implements a generalized Lomb-Scargle periodogram that:
+
+- Accepts measurement uncertainties for weighted fitting
+- Uses the Baluev (2008) method to compute false alarm probabilities (FAP)
+- Estimates period uncertainties from the peak width in frequency space
+- Automatically selects an appropriate frequency grid based on the time baseline
+
+The periodogram power is computed using Astropy's LombScargle implementation with options for:
+- Weighted fitting when flux errors are provided
+- Various normalization schemes (default: 'standard')
+- Adaptive frequency grid spacing based on observational baseline
+
+Significant peaks are identified using prominence and distance thresholds to avoid noise fluctuations, and the false alarm probability provides a statistical measure of peak significance.
 
 
 ## Contributing

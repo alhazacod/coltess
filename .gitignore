@@ -33,6 +33,7 @@ ENV/
 
 #OC
 AGENTS.md
+.opencode/
 
 # IDE
 .vscode/
