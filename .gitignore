@@ -42,6 +42,10 @@ AGENTS.md
 *.swo
 README_md_ltex.json
 
+# Latex
+abstract
+abstract/*
+
 # Jupyter
 .ipynb_checkpoints/
 
