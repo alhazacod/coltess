@@ -7,7 +7,6 @@ star = create_catalog(
     "lambda tau",
     radius_arcmin=10.0,
     output_file="catalog.csv",
-    simbad_server="simbad.cds.unistra.fr",
 )
 
 # 2. Find available TESS sectors
@@ -22,7 +21,8 @@ process_images_parallel(
     script_file=script_path,
     catalog_file="catalog.csv",
     output_dir="photometry_results",
-    star=star,
+    star=star, 
+    keep_images_dir="lambda tau"
 )
 
 # 5. Load and plot light curve

@@ -29,6 +29,7 @@ def process_images_parallel(
     star: StarData,
     start_idx: int = 0,
     max_workers: int | None = None,
+    keep_images_dir: str | None = None,
 ):
     """
     Download and process TESS images in parallel for a target star.
@@ -54,6 +55,9 @@ def process_images_parallel(
     max_workers : int or None, optional
         Number of parallel worker processes. Defaults to the number of
         available CPU cores.
+    keep_images_dir : str or None, optional
+        Directory where FITS images in which the star was detected are
+        saved. If None, no images are kept.
 
     Notes
     -----
@@ -80,6 +84,7 @@ def process_images_parallel(
         catalog_file=catalog_file,
         output_dir=output_dir,
         star=star,
+        keep_images_dir=keep_images_dir,
     )
 
     try:
@@ -112,6 +117,7 @@ def worker_process_fits(
     catalog_file: str,
     output_dir: str,
     star: StarData,
+    keep_images_dir: str | None = None,
 ):
     """
     Process a single TESS FITS image.
@@ -121,7 +127,9 @@ def worker_process_fits(
        download script.
     2. Runs aperture photometry for the target star.
     3. Writes photometry results to a CSV file.
-    4. Deletes all temporary files and directories.
+    4. Optionally copies the FITS file to ``keep_images_dir`` when the
+       star was detected.
+    5. Deletes all temporary files and directories.
 
     Parameters
     ----------
@@ -135,6 +143,9 @@ def worker_process_fits(
         Directory where the resulting photometry CSV will be saved.
     star : StarData
         Target star information.
+    keep_images_dir : str or None, optional
+        Directory where the FITS image is saved if the star was detected.
+        If None, no image is kept.
 
     Returns
     -------
@@ -183,6 +194,13 @@ def worker_process_fits(
                 f"[PID {os.getpid()}] "
                 f"Star detected at line {index + 1} saved at {output_path}"
             )
+
+            if keep_images_dir is not None:
+                os.makedirs(keep_images_dir, exist_ok=True)
+                shutil.copy2(
+                    fits_files[0],
+                    os.path.join(keep_images_dir, os.path.basename(fits_files[0])),
+                )
 
         return index, success
 
