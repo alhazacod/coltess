@@ -252,9 +252,8 @@ class TessPhotometry:
         fits_file: str,
         catalog_file: str,
         target_star: StarData,
-        output_dir: str = "./csv_results",
         max_sep_arcsec: float = 0.5,
-    ) -> bool:
+    ) -> Optional[Table]:
         """
         Process a single FITS file and extract photometry for a target source.
 
@@ -267,20 +266,16 @@ class TessPhotometry:
             Path to a single TESS FITS image.
         catalog_file : str
             Path to the Gaia catalog CSV file.
-        target_ra : float
-            Target right ascension in degrees.
-        target_dec : float
-            Target declination in degrees.
-        output_dir : str, optional
-            Directory where the output CSV file will be written.
+        target_star : StarData
+            Target star information.
         max_sep_arcsec : float, optional
             Maximum angular separation threshold.
 
         Returns
         -------
-        bool
-            True if the target source was detected and saved,
-            False otherwise.
+        astropy.table.Table or None
+            Table containing the photometric measurements of the target
+            source in the frame, or None if the target was not detected.
 
         Notes
         -----
@@ -291,8 +286,6 @@ class TessPhotometry:
         target_ra = target_star.ra
         target_dec = target_star.dec
 
-        os.makedirs(output_dir, exist_ok=True)
-
         catalog = self.load_catalog(catalog_file)
 
         target_coord = SkyCoord(target_ra, target_dec, unit=u.deg)
@@ -300,7 +293,7 @@ class TessPhotometry:
         try:
             result = self.process_fits(fits_file, catalog)
             if result is None or len(result) == 0:
-                return False
+                return None
 
             coords = SkyCoord(result["RA"], result["DEC"], unit=u.deg)
 
@@ -315,20 +308,12 @@ class TessPhotometry:
                     f"in {os.path.basename(fits_file)}",
                     flush=True,
                 )
-                return False
+                return None
 
             # Keep only if it contains the star
             lambda_tau_row = result[idx : idx + 1]
 
-            filename = os.path.basename(fits_file).replace(".fits", ".csv")
-            output_path = os.path.join(output_dir, filename)
-            lambda_tau_row.write(output_path, overwrite=True)
-
-            print(
-                f"[PID {os.getpid()}] " f"Saved photometry at {output_path}", flush=True
-            )
-
-            return True
+            return lambda_tau_row
         except Exception as e:
             print(f"[PID {os.getpid()}] Error processing {fits_file}: {e}")
-            return False
+            return None

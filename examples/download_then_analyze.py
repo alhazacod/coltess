@@ -1,3 +1,5 @@
+import os
+
 from coltess.photometry import TessPhotometry
 from coltess.download import download_tess_image
 from coltess.catalog import create_catalog
@@ -30,9 +32,11 @@ for line in lines:
     # 3. Create a catalog with the stars within a 10arcmin radius around star_name
     star = create_catalog(star_name, radius_arcmin=10.0, output_file=catalog_file)
     # 4. Check if the star is in the image, do the photometry and save the result inside csv_dir
-    success = photometry.process_image(
-        fits_file, catalog_file, star, output_dir=csv_dir
+    row = photometry.process_image(
+        fits_file, catalog_file, star, max_sep_arcsec=1.0
     )
-    print(success)
+    success = row is not None
     if success:
+        output_path = os.path.join(csv_dir, os.path.basename(fits_file).replace(".fits", ".csv"))
+        row.write(output_path, overwrite=True)
         print(f"Star found at {line}")

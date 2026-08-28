@@ -3,6 +3,8 @@
 Analysis tools.
 """
 
+import os
+
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
@@ -19,17 +21,20 @@ from pathlib import Path
 
 
 def load_photometry_data(
-    csv_dir: str, target_star: StarData, max_sep_arcsec: float = 0.5
+    csv_path: str, target_star: StarData, max_sep_arcsec: float = 0.5
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Load per-frame photometry CSV files and extract a target light curve.
+    Load photometry data and extract a target light curve.
 
-    For each frame, the source below a maximum angular separation is selected.
+    ``csv_path`` may be either a single CSV file containing one row per
+    frame (appended photometry output) or a directory of per-frame CSV
+    files. Sources below a maximum angular separation are selected.
 
     Parameters
     ----------
-    csv_dir : str
-        Directory containing per-frame CSV photometry files.
+    csv_path : str
+        Path to a combined photometry CSV file or a directory of
+        per-frame CSV files.
     target_star : StarData
         Target star with RA/Dec coordinates.
     max_sep_arcsec : float, optional
@@ -38,7 +43,7 @@ def load_photometry_data(
     Returns
     -------
     times : numpy.ndarray
-        Observation times in Julian Date.
+        Observation times in Julian Date, sorted chronologically.
     fluxes : numpy.ndarray
         Measured fluxes corresponding to the target.
     flux_errors : numpy.ndarray
@@ -47,7 +52,8 @@ def load_photometry_data(
     Raises
     ------
     RuntimeError
-        If no CSV files are found or the target is not detected in any frame.
+        If no photometry data is found or the target is not detected
+        in any frame.
     """
 
     target_ra = target_star.ra
@@ -59,36 +65,67 @@ def load_photometry_data(
     fluxes = []
     flux_errors = []
 
-    csv_files = sorted(Path(csv_dir).glob("*.csv"))
+    if os.path.isdir(csv_path):
+        csv_files = sorted(Path(csv_path).glob("*.csv"))
 
-    if not csv_files:
-        raise RuntimeError("No CSV files found.")
+        if not csv_files:
+            raise RuntimeError("No CSV files found.")
 
-    for csv_file in csv_files:
-        df = pd.read_csv(csv_file)
+        for csv_file in csv_files:
+            df = pd.read_csv(csv_file)
+
+            coords = SkyCoord(df["RA"].values, df["DEC"].values, unit=u.deg)
+
+            seps = target_coord.separation(coords).arcsec
+            idx = np.argmin(seps)
+
+            if seps[idx] > max_sep_arcsec:
+                continue
+
+            flux = df.loc[idx, "flux"]
+            flux_err = df.loc[idx, "flux_err"]
+            date_obs = df.loc[idx, "DATE-OBS"]
+
+            jd = Time(date_obs, format="isot", scale="utc").jd
+
+            fluxes.append(flux)
+            flux_errors.append(flux_err)
+            times.append(jd)
+
+    else:
+        if not os.path.exists(csv_path):
+            raise RuntimeError(f"Photometry file not found: {csv_path}")
+
+        df = pd.read_csv(csv_path)
 
         coords = SkyCoord(df["RA"].values, df["DEC"].values, unit=u.deg)
 
         seps = target_coord.separation(coords).arcsec
-        idx = np.argmin(seps)
 
-        if seps[idx] > max_sep_arcsec:
-            continue
+        for i in range(len(df)):
+            if seps[i] > max_sep_arcsec:
+                continue
 
-        flux = df.loc[idx, "flux"]
-        flux_err = df.loc[idx, "flux_err"]
-        date_obs = df.loc[idx, "DATE-OBS"]
+            flux = df.loc[i, "flux"]
+            flux_err = df.loc[i, "flux_err"]
+            date_obs = df.loc[i, "DATE-OBS"]
 
-        jd = Time(date_obs, format="isot", scale="utc").jd
+            jd = Time(date_obs, format="isot", scale="utc").jd
 
-        fluxes.append(flux)
-        flux_errors.append(flux_err)
-        times.append(jd)
+            fluxes.append(flux)
+            flux_errors.append(flux_err)
+            times.append(jd)
 
     if not times:
-        raise RuntimeError("Target not found in any CSV file.")
+        raise RuntimeError("Target not found in any frame.")
 
-    return np.array(times), np.array(fluxes), np.array(flux_errors)
+    times_arr = np.array(times)
+    fluxes_arr = np.array(fluxes)
+    flux_errors_arr = np.array(flux_errors)
+
+    order = np.argsort(times_arr)
+
+    return times_arr[order], fluxes_arr[order], flux_errors_arr[order]
 
 
 def compute_periodogram(

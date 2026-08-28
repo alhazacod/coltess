@@ -83,16 +83,16 @@ sector = int(sectors["sector"][0])
 # 3. Download sector script
 script_path = download_tess_sector_script(sector)
 
-# 4. Process images in parallel
+# 4. Process images in parallel, appending results to a single CSV
 process_images_parallel(
     script_file=script_path,
     catalog_file="catalog.csv",
-    output_dir="photometry_results",
+    output_file="lambda_tau_photometry.csv",
     star=star
 )
 
 # 5. Load and plot light curve with error bars
-times, fluxes, flux_errors = load_photometry_data("photometry_results", star)
+times, fluxes, flux_errors = load_photometry_data("lambda_tau_photometry.csv", star)
 
 plt.errorbar(times, fluxes, yerr=flux_errors, fmt="o", ms=2, capsize=0, elinewidth=0.5)
 plt.xlabel("Julian Date")
@@ -131,7 +131,7 @@ Main photometry processing class.
 - `zeropoint` (float): Magnitude zeropoint (default: 20.44)
 
 **Methods:**
-- `process_image(fits_file, catalog_file, target_star, output_dir)`: Process single FITS image
+- `process_image(fits_file, catalog_file, target_star, max_sep_arcsec)`: Process single FITS image, returns the target row as an astropy Table (or None)
 - `load_catalog(catalog_file)`: Load Gaia catalog from CSV
 
 ### Catalog Functions
@@ -170,10 +170,10 @@ Download single TESS FFI using curl command.
 
 ### Analysis Functions
 
-#### `load_photometry_data(csv_dir, target_star, max_sep_arcsec)`
-Load light curve from photometry CSV files.
+#### `load_photometry_data(csv_path, target_star, max_sep_arcsec)`
+Load light curve from a combined photometry CSV file (or a directory of per-frame CSVs).
 
-**Returns:** Tuple of (times, fluxes, flux_errors) as numpy arrays
+**Returns:** Tuple of (times, fluxes, flux_errors) as numpy arrays, sorted by time
 
 #### `compute_periodogram(times, fluxes, flux_errors=None, min_period=0.1, max_period=10.0, oversampling=5.0)`
 Compute Lomb-Scargle periodogram with optional error weighting and false alarm probability.
@@ -198,10 +198,12 @@ Compute Lomb-Scargle periodogram with optional error weighting and false alarm p
 
 ### Parallel Processing
 
-#### `process_images_parallel(script_file, catalog_file, output_dir, star, start_idx, max_workers)`
+#### `process_images_parallel(script_file, catalog_file, star, output_file=None, start_idx=0, max_workers=None, keep_images_dir=None)`
 Process TESS images in parallel.
 
-Automatically downloads, analyzes, and cleans up temporary files for each image.
+Automatically downloads, analyzes, and cleans up temporary files for each image. Photometry rows
+(with `SECTOR` and `CURL` columns) are appended to a single CSV file under a file lock. If the
+output file already has data, processing resumes automatically after the last processed image.
 
 ## How It Works
 

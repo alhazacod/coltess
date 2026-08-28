@@ -13,17 +13,17 @@ sector = int(sectors["sector"][0])
 # 3. Download sector script
 script_path = download_tess_sector_script(sector)
 
-# 4. Process images in parallel
+# 4. Process images in parallel, appending results to a single CSV
 process_images_parallel(
     script_file=script_path,
     catalog_file="catalog.csv",
-    output_dir="photometry_results",
+    output_file="photometry_results.csv",
     star=star,
     start_idx=0,
 )
 
 # 5. Load light curve, compute periodogram, plot both
-times, fluxes, flux_errors = load_photometry_data("photometry_results", star)
+times, fluxes, flux_errors = load_photometry_data("photometry_results.csv", star)
 result = compute_periodogram(times, fluxes, flux_errors)
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), tight_layout=True)

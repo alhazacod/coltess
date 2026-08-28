@@ -20,9 +20,7 @@ def main():
     base_dir.mkdir(exist_ok=True)
 
     catalog_file = base_dir / "gaia_catalog.csv"
-    csv_dir = base_dir / "csv"
-
-    csv_dir.mkdir(exist_ok=True)
+    output_file = base_dir / "photometry.csv"
 
     # --------------------------------------------------
     # 1. Create Gaia catalog + StarData
@@ -54,12 +52,13 @@ def main():
     # --------------------------------------------------
     # 3. Parallel download + photometry
     # --------------------------------------------------
+    # Results are appended to a single CSV. If the file already has
+    # data, processing resumes automatically after the last image.
     process_images_parallel(
         script_file=script_path,
         catalog_file=str(catalog_file),
-        output_dir=str(csv_dir),
+        output_file=str(output_file),
         star=star,
-        start_idx=19000,
         max_workers=6,
     )
 
@@ -67,7 +66,7 @@ def main():
     # 4. Load photometry and plot
     # --------------------------------------------------
     jd, flux, flux_errors = load_photometry_data(
-        csv_dir=str(csv_dir),
+        csv_path=str(output_file),
         target_star=star,
         max_sep_arcsec=1.0,
     )

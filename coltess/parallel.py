@@ -11,11 +11,19 @@ Parallelization is implemented using ``multiprocessing.Pool``.
 """
 
 import os
+import re
 import sys
 import shutil
 import tempfile
 import multiprocessing as mp
 from functools import partial
+
+import pandas as pd
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None  # type: ignore[assignment]
 
 from coltess.core import StarData
 from coltess.photometry import TessPhotometry
@@ -25,8 +33,8 @@ from coltess.download import download_tess_images
 def process_images_parallel(
     script_file: str,
     catalog_file: str,
-    output_dir: str,
     star: StarData,
+    output_file: str | None = None,
     start_idx: int = 0,
     max_workers: int | None = None,
     keep_images_dir: str | None = None,
@@ -37,7 +45,8 @@ def process_images_parallel(
     This function coordinates the parallel execution of photometry over
     a list of TESS image URLs or commands contained in a script file.
     Each worker downloads exactly one FITS file, performs photometry,
-    writes results to disk, and deletes temporary files.
+    appends one row per detection to a single output CSV file, and
+    deletes temporary files.
 
     Parameters
     ----------
@@ -45,13 +54,16 @@ def process_images_parallel(
         Path to a TESS download script (one image per line).
     catalog_file : str
         Path to a Gaia catalog CSV.
-    output_dir : str
-        Directory where photometry CSV files will be written.
     star : StarData
         Target star information.
+    output_file : str or None, optional
+        Path of the single CSV file that photometry rows are appended to.
+        Defaults to ``<star name>_<sector>.csv``.
     start_idx : int, optional
         Line index in the script file from which to start processing.
-        Useful for resuming interrupted runs.
+        If the output file exists and contains data, processing resumes
+        automatically after the last processed image, overriding this
+        value.
     max_workers : int or None, optional
         Number of parallel worker processes. Defaults to the number of
         available CPU cores.
@@ -62,6 +74,9 @@ def process_images_parallel(
     Notes
     -----
     - Each FITS file is handled independently.
+    - Rows are appended to the output file under an exclusive file lock,
+      so concurrent workers never corrupt it. Duplicate rows (same curl
+      command) are skipped.
     - Temporary FITS files are stored in per-worker directories and
       deleted after processing.
     - Pressing ``Ctrl+C`` terminates all workers immediately and exits
@@ -70,8 +85,26 @@ def process_images_parallel(
     if max_workers is None:
         max_workers = mp.cpu_count()
 
+    sector = _sector_from_script(script_file)
+    if sector is not None:
+        star.sector = sector
+
+    if output_file is None:
+        safe_name = star.name.replace(" ", "_")
+        if sector is not None:
+            output_file = f"{safe_name}_{sector}.csv"
+        else:
+            output_file = f"{safe_name}.csv"
+
+    output_dir = os.path.dirname(output_file) or "."
+    os.makedirs(output_dir, exist_ok=True)
+
     with open(script_file) as f:
-        n_images = sum(1 for _ in f)
+        lines = f.readlines()
+
+    n_images = len(lines)
+
+    start_idx = _resume_start_idx(lines, output_file, start_idx)
 
     print(f"Processing images {start_idx} -> {n_images - 1}")
     print(f"Using {max_workers} workers")
@@ -82,8 +115,9 @@ def process_images_parallel(
         worker_process_fits,
         script_file,
         catalog_file=catalog_file,
-        output_dir=output_dir,
         star=star,
+        output_file=output_file,
+        sector=sector,
         keep_images_dir=keep_images_dir,
     )
 
@@ -111,12 +145,86 @@ def process_images_parallel(
         pool.join()
 
 
+def _sector_from_script(script_file: str) -> int | None:
+    """
+    Extract the TESS sector number from the download script filename.
+
+    Parameters
+    ----------
+    script_file : str
+        Path to a TESS download script.
+
+    Returns
+    -------
+    int or None
+        Sector number, or None if it cannot be determined.
+    """
+    match = re.search(r"tesscurl_sector_(\d+)_ffic\.sh", os.path.basename(script_file))
+    return int(match.group(1)) if match else None
+
+
+def _resume_start_idx(lines: list[str], output_file: str, start_idx: int) -> int:
+    """
+    Determine the starting script line index for resuming a run.
+
+    If the output file exists and contains data, the image filename from
+    its last row is matched against the script lines and processing
+    resumes from the line after it.
+
+    Parameters
+    ----------
+    lines : list of str
+        Lines of the TESS download script.
+    output_file : str
+        Path of the output CSV file.
+    start_idx : int
+        User-supplied starting line index.
+
+    Returns
+    -------
+    int
+        Line index from which to start processing.
+    """
+    if not os.path.exists(output_file) or os.path.getsize(output_file) == 0:
+        return start_idx
+
+    try:
+        last_curl = pd.read_csv(output_file, usecols=["CURL"]).iloc[-1]["CURL"]
+        last_filename = os.path.basename(str(last_curl).split()[-1])
+
+        for i, line in enumerate(lines):
+            tokens = line.split()
+            if not tokens:
+                continue
+            if os.path.basename(tokens[-1]) == last_filename:
+                resume = i + 1
+                if resume > start_idx:
+                    print(
+                        f"Resuming after image {last_filename} "
+                        f"(script line {i + 1}); starting at line {resume}"
+                    )
+                    return resume
+                return start_idx
+
+        print(
+            f"WARNING: last processed image {last_filename} not found in "
+            f"the script; starting from line {start_idx}"
+        )
+    except Exception:
+        print(
+            f"WARNING: could not resume from {output_file}; starting from line {start_idx}"
+        )
+
+    return start_idx
+
+
 def worker_process_fits(
     script_file: str,
     index: int,
     catalog_file: str,
-    output_dir: str,
     star: StarData,
+    output_file: str,
+    sector: int | None = None,
     keep_images_dir: str | None = None,
 ):
     """
@@ -126,7 +234,8 @@ def worker_process_fits(
     1. Downloads exactly one FITS file specified by ``index`` in the
        download script.
     2. Runs aperture photometry for the target star.
-    3. Writes photometry results to a CSV file.
+    3. Appends one row (with sector and curl command) to the output CSV
+       file, protected by an exclusive file lock.
     4. Optionally copies the FITS file to ``keep_images_dir`` when the
        star was detected.
     5. Deletes all temporary files and directories.
@@ -139,10 +248,12 @@ def worker_process_fits(
         Line index in the script file corresponding to the image to process.
     catalog_file : str
         Path to a Gaia catalog CSV.
-    output_dir : str
-        Directory where the resulting photometry CSV will be saved.
     star : StarData
         Target star information.
+    output_file : str
+        Path of the single CSV file the photometry row is appended to.
+    sector : int or None, optional
+        TESS sector number stored in the output row.
     keep_images_dir : str or None, optional
         Directory where the FITS image is saved if the star was detected.
         If None, no image is kept.
@@ -158,11 +269,17 @@ def worker_process_fits(
     - Each worker runs in its own process and uses a unique temporary
       directory.
     - All temporary files are deleted even if an exception occurs.
+    - Appends are serialized with ``fcntl.flock`` and rows with an
+      already present curl command are skipped.
     """
 
     success = False
 
     print(f"[PID {os.getpid()}] " f"Processing script line {index + 1}")
+
+    with open(script_file) as f:
+        lines = f.readlines()
+    curl_line = lines[index].strip()
 
     tmp_dir = tempfile.mkdtemp(prefix="tess_")
 
@@ -178,21 +295,25 @@ def worker_process_fits(
             os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if f.endswith(".fits")
         ]
 
+        row = None
         if fits_files:
             processor = TessPhotometry()
-            success = processor.process_image(
+            row = processor.process_image(
                 fits_files[0],
                 catalog_file=catalog_file,
                 target_star=star,
-                output_dir=output_dir,
             )
+            success = row is not None
 
-        if success:
-            filename = os.path.basename(fits_files[0]).replace(".fits", ".csv")
-            output_path = os.path.join(output_dir, filename)
+        if row is not None:
+            df = row.to_pandas()
+            df["SECTOR"] = sector
+            df["CURL"] = curl_line
+            _append_row(df, output_file, curl_line)
+
             print(
                 f"[PID {os.getpid()}] "
-                f"Star detected at line {index + 1} saved at {output_path}"
+                f"Star detected at line {index + 1} appended to {output_file}"
             )
 
             if keep_images_dir is not None:
@@ -206,3 +327,42 @@ def worker_process_fits(
 
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def _append_row(df: pd.DataFrame, output_file: str, curl_line: str) -> None:
+    """
+    Append one photometry row to the output CSV under an exclusive lock.
+
+    The header is written only when the file is empty and rows whose curl
+    command is already present are skipped.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Single-row DataFrame with the photometry measurements.
+    output_file : str
+        Path of the output CSV file.
+    curl_line : str
+        Curl command used to download the image; used for deduplication.
+    """
+    with open(output_file, "a") as f:
+        if fcntl is not None:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+
+        try:
+            if os.path.getsize(output_file) == 0:
+                header = True
+            else:
+                existing = set(
+                    pd.read_csv(output_file, usecols=["CURL"])["CURL"].astype(str)
+                )
+                if curl_line in existing:
+                    return
+                header = False
+
+            df.to_csv(f, header=header, index=False)
+            f.flush()
+
+        finally:
+            if fcntl is not None:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
