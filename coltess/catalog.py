@@ -17,7 +17,7 @@ from astroquery.simbad import Simbad
 Gaia.ROW_LIMIT = -1
 
 
-def get_star(name: str) -> StarData:
+def get_star(name: str, simbad_server: str | None = None) -> StarData:
     """
     Resolve an object name using SIMBAD and return a
     StarData with its sky coordinates and id.
@@ -26,6 +26,10 @@ def get_star(name: str) -> StarData:
     ----------
     name : str
         Object identifier resolvable by SIMBAD.
+    simbad_server : str, optional
+        SIMBAD server to use. Defaults to the astroquery default
+        (``simbad.cds.unistra.fr``); use ``"simbad.harvard.edu"`` for the
+        Harvard mirror when the default is unreachable.
 
     Returns
     -------
@@ -34,6 +38,9 @@ def get_star(name: str) -> StarData:
         be accessed as star.ra and star.dec respectively.
 
     """
+    if simbad_server is not None:
+        Simbad.server = simbad_server
+
     Simbad.add_votable_fields("ids")
     result = Simbad.query_object(name)
 
@@ -104,7 +111,10 @@ def query_gaia_catalog(star: StarData, radius_arcmin: float = 1.0) -> pd.DataFra
 
 
 def create_catalog(
-    star_name: str, radius_arcmin: float = 10.0, output_file: str = "gaia_catalog.csv"
+    star_name: str,
+    radius_arcmin: float = 10.0,
+    output_file: str = "gaia_catalog.csv",
+    simbad_server: str | None = None,
 ) -> StarData:
     """
     Create and save a Gaia source catalog centered on a target star.
@@ -117,6 +127,10 @@ def create_catalog(
         Search radius in arcminutes.
     output_file : str, optional
         Output CSV filename.
+    simbad_server : str, optional
+        SIMBAD server to use. Defaults to the astroquery default
+        (``simbad.cds.unistra.fr``); use ``"simbad.harvard.edu"`` for the
+        Harvard mirror when the default is unreachable.
 
     Returns
     -------
@@ -124,7 +138,7 @@ def create_catalog(
         StarData with name, right acension, declination and gaiadr3 id.
     """
 
-    star = get_star(star_name)
+    star = get_star(star_name, simbad_server=simbad_server)
     catalog = query_gaia_catalog(star, radius_arcmin)
 
     catalog.to_csv(output_file, index=False)

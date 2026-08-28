@@ -27,6 +27,39 @@ warnings.filterwarnings(
     category=FITSFixedWarning
 )
 
+
+@functools.lru_cache(maxsize=1)
+def _load_catalog_cached(catalog_file: str):
+    """
+    Load a Gaia source catalog from a CSV file, cached by file path.
+
+    The cache is process-local and keyed only on the path, so it is shared
+    across all TessPhotometry instances and hit on every call after the
+    first.
+
+    Parameters
+    ----------
+    catalog_file : str
+        Path to a CSV file containing at least `ra`, `dec`, and `source_id`
+        columns in degrees (ICRS).
+
+    Returns
+    -------
+    list of tuple
+        List of `(ra, dec, source_id)` entries for all catalog sources.
+    """
+    df = pd.read_csv(catalog_file, dtype={"source_id": str})
+
+    coords = SkyCoord(df["ra"], df["dec"], unit=u.deg)
+
+    catalog = [
+        (coords[i].ra.deg, coords[i].dec.deg, df["source_id"].iloc[i])
+        for i in range(len(df))
+    ]
+
+    return catalog
+
+
 class TessPhotometry:
     """
     Aperture photometry pipeline for TESS Full Frame Images (FFIs).
@@ -71,7 +104,6 @@ class TessPhotometry:
         self.zeropoint = zeropoint
         self.epadu = 5.22 # TESS gain (e-/ADU); overridden for e-/s data
 
-    @functools.lru_cache(maxsize=128)
     def load_catalog(self, catalog_file: str):
 
         """
@@ -88,16 +120,7 @@ class TessPhotometry:
         list of tuple
             List of `(ra, dec, source_id)` entries for all catalog sources.
         """
-        df = pd.read_csv(catalog_file, dtype={"source_id": str})
-
-        coords = SkyCoord(df["ra"], df["dec"], unit=u.deg)
-
-        catalog = [
-            (coords[i].ra.deg, coords[i].dec.deg, df["source_id"].iloc[i])
-            for i in range(len(df))
-        ]
-
-        return catalog       
+        return _load_catalog_cached(catalog_file)
 
 
     def process_fits(self, fits_path: str, catalog: List[tuple]) -> Optional[Table]:
@@ -137,7 +160,7 @@ class TessPhotometry:
                 x, y = SkyCoord(ra, dec, unit=u.deg).to_pixel(wcs)
                 if (0 <= x < image.shape[1] and 0 <= y < image.shape[0]):
                     objects_in_frame.append((ra, dec, obj_id, x, y))
-            except Exception as e:
+            except Exception:
                 continue
         
         if not objects_in_frame:

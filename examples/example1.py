@@ -3,7 +3,7 @@ from coltess import process_images_parallel, load_photometry_data
 import matplotlib.pyplot as plt
 
 # 1. Create catalog and get star info
-star = create_catalog("lambda tau", radius_arcmin=10.0, output_file="catalog.csv")
+star = create_catalog("lambda tau", radius_arcmin=10.0, output_file="catalog.csv", simbad_server='simbad.cds.unistra.fr')
 
 # 2. Find available TESS sectors
 sectors = get_tess_sectors(star)

@@ -83,11 +83,11 @@ def process_images_parallel(
     )
 
     try:
-        pool = mp.get_context('fork').Pool(processes=max_workers)
+        pool = mp.get_context('fork').Pool(processes=max_workers, maxtasksperchild=100)
     except ValueError:
         # Windows without WSL - needs __main__ guard
         print("WARNING: Using 'spawn' method. Scripts should use if __name__ == '__main__' or process images sequentially")
-        pool = mp.get_context('spawn').Pool(processes=max_workers)
+        pool = mp.get_context('spawn').Pool(processes=max_workers, maxtasksperchild=100)
 
     try:
         for _ in pool.imap_unordered(worker, indices):
