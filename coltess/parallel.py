@@ -83,11 +83,13 @@ def process_images_parallel(
     )
 
     try:
-        pool = mp.get_context('fork').Pool(processes=max_workers, maxtasksperchild=100)
+        pool = mp.get_context("fork").Pool(processes=max_workers, maxtasksperchild=100)
     except ValueError:
         # Windows without WSL - needs __main__ guard
-        print("WARNING: Using 'spawn' method. Scripts should use if __name__ == '__main__' or process images sequentially")
-        pool = mp.get_context('spawn').Pool(processes=max_workers, maxtasksperchild=100)
+        print(
+            "WARNING: Using 'spawn' method. Scripts should use if __name__ == '__main__' or process images sequentially"
+        )
+        pool = mp.get_context("spawn").Pool(processes=max_workers, maxtasksperchild=100)
 
     try:
         for _ in pool.imap_unordered(worker, indices):
@@ -149,10 +151,7 @@ def worker_process_fits(
 
     success = False
 
-    print(
-        f"[PID {os.getpid()}] "
-        f"Processing script line {index + 1}"
-    )
+    print(f"[PID {os.getpid()}] " f"Processing script line {index + 1}")
 
     tmp_dir = tempfile.mkdtemp(prefix="tess_")
 
@@ -165,9 +164,7 @@ def worker_process_fits(
         )
 
         fits_files = [
-            os.path.join(tmp_dir, f)
-            for f in os.listdir(tmp_dir)
-            if f.endswith(".fits")
+            os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if f.endswith(".fits")
         ]
 
         if fits_files:
@@ -175,7 +172,7 @@ def worker_process_fits(
             success = processor.process_image(
                 fits_files[0],
                 catalog_file=catalog_file,
-                target_star = star,
+                target_star=star,
                 output_dir=output_dir,
             )
 

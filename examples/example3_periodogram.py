@@ -2,11 +2,8 @@ from coltess import create_catalog, get_tess_sectors, download_tess_sector_scrip
 from coltess import process_images_parallel, load_photometry_data, compute_periodogram
 import matplotlib.pyplot as plt
 
-
 # 1. Create catalog and get star info.
-star = create_catalog(
-            "HD 2655", radius_arcmin=10.0, output_file="catalog.csv"
-       )
+star = create_catalog("HD 2655", radius_arcmin=10.0, output_file="catalog.csv")
 
 # 2. Find available TESS sectors
 sectors = get_tess_sectors(star)

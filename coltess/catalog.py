@@ -92,9 +92,7 @@ def query_gaia_catalog(star: StarData, radius_arcmin: float = 1.0) -> pd.DataFra
     coord = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame="icrs")
 
     # 2. Use the native cone search
-    job = Gaia.cone_search(
-        coordinate=coord, radius=radius_deg * u.deg
-    )
+    job = Gaia.cone_search(coordinate=coord, radius=radius_deg * u.deg)
     results = job.get_results()
 
     # query = f"""

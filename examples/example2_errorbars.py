@@ -17,7 +17,7 @@ process_images_parallel(
     script_file=script_path,
     catalog_file="catalog.csv",
     output_dir="photometry_results",
-    star=star
+    star=star,
 )
 
 # 5. Load and plot light curve with error bars

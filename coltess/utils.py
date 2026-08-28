@@ -1,11 +1,11 @@
-
 import os
-import pickle #DONT USE PICKLE, CHANGE IT TO NPZ WHEN YOU IMPLEMENT THIS!!!!!
+import pickle  # DONT USE PICKLE, CHANGE IT TO NPZ WHEN YOU IMPLEMENT THIS!!!!!
 from typing import Optional
 
 """
 DONT USE PICKLE, CHANGE IT TO NPZ WHEN YOU IMPLEMENT THIS!!!!!
 """
+
 
 def save_checkpoint(value: int, filename: str = "checkpoint.pkl") -> None:
     """Save checkpoint"""
