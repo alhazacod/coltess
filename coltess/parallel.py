@@ -35,7 +35,7 @@ def process_images_parallel(
     catalog_file: str,
     star: StarData,
     output_file: str | None = None,
-    start_idx: int = 0,
+    start_idx: int | None = None,
     max_workers: int | None = None,
     keep_images_dir: str | None = None,
 ):
@@ -59,11 +59,11 @@ def process_images_parallel(
     output_file : str or None, optional
         Path of the single CSV file that photometry rows are appended to.
         Defaults to ``<star name>_<sector>.csv``.
-    start_idx : int, optional
+    start_idx : int or None, optional
         Line index in the script file from which to start processing.
-        If the output file exists and contains data, processing resumes
-        automatically after the last processed image, overriding this
-        value.
+        If None (default) and the output file exists with data,
+        processing resumes automatically after the last processed image.
+        Passing an explicit value overrides the automatic resume.
     max_workers : int or None, optional
         Number of parallel worker processes. Defaults to the number of
         available CPU cores.
@@ -104,7 +104,8 @@ def process_images_parallel(
 
     n_images = len(lines)
 
-    start_idx = _resume_start_idx(lines, output_file, start_idx)
+    if start_idx is None:
+        start_idx = _resume_start_idx(lines, output_file)
 
     print(f"Processing images {start_idx} -> {n_images - 1}")
     print(f"Using {max_workers} workers")
@@ -163,7 +164,7 @@ def _sector_from_script(script_file: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
-def _resume_start_idx(lines: list[str], output_file: str, start_idx: int) -> int:
+def _resume_start_idx(lines: list[str], output_file: str) -> int:
     """
     Determine the starting script line index for resuming a run.
 
@@ -177,8 +178,6 @@ def _resume_start_idx(lines: list[str], output_file: str, start_idx: int) -> int
         Lines of the TESS download script.
     output_file : str
         Path of the output CSV file.
-    start_idx : int
-        User-supplied starting line index.
 
     Returns
     -------
@@ -186,7 +185,7 @@ def _resume_start_idx(lines: list[str], output_file: str, start_idx: int) -> int
         Line index from which to start processing.
     """
     if not os.path.exists(output_file) or os.path.getsize(output_file) == 0:
-        return start_idx
+        return 0
 
     try:
         last_curl = pd.read_csv(output_file, usecols=["CURL"]).iloc[-1]["CURL"]
@@ -198,24 +197,20 @@ def _resume_start_idx(lines: list[str], output_file: str, start_idx: int) -> int
                 continue
             if os.path.basename(tokens[-1]) == last_filename:
                 resume = i + 1
-                if resume > start_idx:
-                    print(
-                        f"Resuming after image {last_filename} "
-                        f"(script line {i + 1}); starting at line {resume}"
-                    )
-                    return resume
-                return start_idx
+                print(
+                    f"Resuming after image {last_filename} "
+                    f"(script line {i + 1}); starting at line {resume}"
+                )
+                return resume
 
         print(
             f"WARNING: last processed image {last_filename} not found in "
-            f"the script; starting from line {start_idx}"
+            "the script; starting from line 0"
         )
     except Exception:
-        print(
-            f"WARNING: could not resume from {output_file}; starting from line {start_idx}"
-        )
+        print(f"WARNING: could not resume from {output_file}; starting from line 0")
 
-    return start_idx
+    return 0
 
 
 def worker_process_fits(

@@ -19,7 +19,6 @@ process_images_parallel(
     catalog_file="catalog.csv",
     output_file="photometry_results.csv",
     star=star,
-    start_idx=0,
 )
 
 # 5. Load light curve, compute periodogram, plot both

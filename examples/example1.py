@@ -22,7 +22,7 @@ process_images_parallel(
     catalog_file="catalog.csv",
     output_file="photometry_results.csv",
     star=star,
-    keep_images_dir="lambda tau"
+    # keep_images_dir="lambda tau" # Optional field if need to save the images with the star in it
 )
 
 # 5. Load and plot light curve
