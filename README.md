@@ -105,6 +105,28 @@ plt.show()
 
 Please refer to the examples folder.
 
+### Analyzing local FITS images
+
+For images you already have on disk, use `process_local_images_parallel` (whole folder, in
+parallel) or `analyze_image` (single file):
+
+```python
+from coltess import process_local_images_parallel, analyze_image, load_photometry_data
+
+# Analyze every FITS file in a folder, appending results to one CSV:
+process_local_images_parallel(
+    fits_dir="my_fits",
+    catalog_file="catalog.csv",
+    star=star,
+    output_file="photometry.csv",
+)
+
+# Analyze a single image:
+row = analyze_image("my_fits/image.fits", "catalog.csv", star)
+
+times, fluxes, flux_errors = load_photometry_data("photometry.csv", star)
+```
+
 
 ## API Reference
 
@@ -133,6 +155,11 @@ Main photometry processing class.
 **Methods:**
 - `process_image(fits_file, catalog_file, target_star, max_sep_arcsec)`: Process single FITS image, returns the target row as an astropy Table (or None)
 - `load_catalog(catalog_file)`: Load Gaia catalog from CSV
+
+#### `analyze_image(fits_file, catalog_file, target_star, max_sep_arcsec=0.5)`
+Convenience wrapper around `TessPhotometry().process_image` for single local FITS images.
+
+**Returns:** astropy Table with the target's photometry row, or None if not detected
 
 ### Catalog Functions
 
@@ -198,12 +225,20 @@ Compute Lomb-Scargle periodogram with optional error weighting and false alarm p
 
 ### Parallel Processing
 
-#### `process_images_parallel(script_file, catalog_file, star, output_file=None, start_idx=0, max_workers=None, keep_images_dir=None)`
+#### `process_images_parallel(script_file, catalog_file, star, output_file=None, start_idx=None, max_workers=None, keep_images_dir=None)`
 Process TESS images in parallel.
 
 Automatically downloads, analyzes, and cleans up temporary files for each image. Photometry rows
 (with `SECTOR` and `CURL` columns) are appended to a single CSV file under a file lock. If the
-output file already has data, processing resumes automatically after the last processed image.
+output file already has data, processing resumes automatically after the last processed image
+(pass `start_idx` to override).
+
+#### `process_local_images_parallel(fits_dir, catalog_file, star, output_file=None, max_workers=None, keep_images_dir=None, pattern="*.fits")`
+Analyze FITS images already stored locally, in parallel.
+
+Photometry rows (with the FITS header `SECTOR` and the local file path in the `CURL` column) are
+appended to a single CSV file under a file lock. Images whose path is already in the output file
+are skipped, so re-running resumes automatically.
 
 ## How It Works
 

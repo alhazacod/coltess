@@ -1,5 +1,5 @@
 from .core import StarData
-from .photometry import TessPhotometry
+from .photometry import TessPhotometry, analyze_image
 from .catalog import create_catalog, get_star, query_gaia_catalog
 from .download import (
     get_tess_sectors,
@@ -8,11 +8,12 @@ from .download import (
     download_tess_images,
 )
 from .analysis import load_photometry_data, compute_periodogram
-from .parallel import process_images_parallel
+from .parallel import process_images_parallel, process_local_images_parallel
 
 __all__ = [
     "StarData",
     "TessPhotometry",
+    "analyze_image",
     "create_catalog",
     "get_star",
     "query_gaia_catalog",
@@ -23,6 +24,7 @@ __all__ = [
     "load_photometry_data",
     "compute_periodogram",
     "process_images_parallel",
+    "process_local_images_parallel",
 ]
 
 __version__ = "0.1.0"

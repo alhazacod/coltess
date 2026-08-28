@@ -317,3 +317,40 @@ class TessPhotometry:
         except Exception as e:
             print(f"[PID {os.getpid()}] Error processing {fits_file}: {e}")
             return None
+
+
+def analyze_image(
+    fits_file: str,
+    catalog_file: str,
+    target_star: StarData,
+    max_sep_arcsec: float = 0.5,
+) -> Optional[Table]:
+    """
+    Analyze a single local FITS image and return the target's photometry row.
+
+    Convenience wrapper around ``TessPhotometry().process_image`` for
+    users that do not need to configure the photometry class.
+
+    Parameters
+    ----------
+    fits_file : str
+        Path to a single TESS FITS image.
+    catalog_file : str
+        Path to the Gaia catalog CSV file.
+    target_star : StarData
+        Target star information.
+    max_sep_arcsec : float, optional
+        Maximum angular separation threshold.
+
+    Returns
+    -------
+    astropy.table.Table or None
+        Table containing the photometric measurements of the target
+        source in the frame, or None if the target was not detected.
+    """
+    return TessPhotometry().process_image(
+        fits_file,
+        catalog_file,
+        target_star,
+        max_sep_arcsec=max_sep_arcsec,
+    )
