@@ -45,6 +45,8 @@ README_md_ltex.json
 # Latex
 abstract
 abstract/*
+poster
+poster/*
 
 # Jupyter
 .ipynb_checkpoints/
