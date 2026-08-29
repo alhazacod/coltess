@@ -34,4 +34,5 @@ class StarData:
     sector: Optional[int] = None
 
     def has_photometry(self) -> bool:
+        """Return True if the star already has light-curve data loaded."""
         return self.times is not None and self.fluxes is not None

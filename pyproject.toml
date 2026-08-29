@@ -1,29 +1,80 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "coltess"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Curves of Light from TESS (COLTESS): photometry tool for TESS FFIs"
+readme = "README.md"
 authors = [
     { name = "Manuel Garcia", email = "alhazacod@proton.me" }
 ]
 requires-python = ">=3.10"
-license = { text = "GPL-3.0-or-later" }
+license = "GPL-3.0-or-later"
+keywords = [
+    "TESS",
+    "FFI",
+    "photometry",
+    "light curves",
+    "Gaia",
+    "Lomb-Scargle",
+    "astronomy",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
 
 dependencies = [
     "numpy",
     "pandas",
-    "matplotlib",
-    "astropy",
+    "astropy>=5.0",
     "astroquery",
+    "photutils>=1.5",
+    "scipy",
+    "requests",
 ]
+
+[project.urls]
+Homepage = "https://github.com/alhazacod/coltess"
+Repository = "https://github.com/alhazacod/coltess"
+Issues = "https://github.com/alhazacod/coltess/issues"
 
 [project.optional-dependencies]
 dev = [
     "ipython",
+    "matplotlib",
     "black",
     "ruff",
     "mypy",
 ]
+
+[tool.setuptools]
+packages = ["coltess"]
+license-files = ["LICENSE"]
+
+[tool.setuptools.dynamic]
+version = { attr = "coltess.__version__" }
+
+[tool.mypy]
+python_version = "3.10"
+
+[[tool.mypy.overrides]]
+module = [
+    "astropy.*",
+    "astroquery.*",
+    "pandas",
+    "photutils.*",
+    "scipy.*",
+    "requests",
+    "matplotlib.*",
+]
+ignore_missing_imports = true

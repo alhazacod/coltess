@@ -1,10 +1,15 @@
-import os
-import pickle  # DONT USE PICKLE, CHANGE IT TO NPZ WHEN YOU IMPLEMENT THIS!!!!!
-from typing import Optional
+"""
+Utility helpers for coltess.
 
+Note
+----
+The checkpoint helpers below are currently unused. Do not rely on
+pickle for persistence; switch to NPZ format before using them.
 """
-DONT USE PICKLE, CHANGE IT TO NPZ WHEN YOU IMPLEMENT THIS!!!!!
-"""
+
+import os
+import pickle
+from typing import Optional
 
 
 def save_checkpoint(value: int, filename: str = "checkpoint.pkl") -> None:

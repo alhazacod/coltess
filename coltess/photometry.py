@@ -189,8 +189,6 @@ class TessPhotometry:
             2D image array extracted from the FITS file.
         positions : list of tuple
             Initial `(x, y)` pixel coordinates for photometry.
-        header : dict
-            FITS header (currently unused but retained for extensibility).
 
         Returns
         -------

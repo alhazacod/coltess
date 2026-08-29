@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Download sectors, bash script
-for certain sector and imaes.
+TESS data access: sector discovery, MAST download scripts, and FFI downloads.
 """
 
 import os
@@ -80,7 +79,7 @@ def download_tess_image(shell_command: str, output_dir: str) -> str:
     shell_command : str
         Shell command used to download the FITS file.
     output_dir : str
-        Directory where FITS file will be writter
+        Directory where the FITS file will be written.
 
     Returns
     -------

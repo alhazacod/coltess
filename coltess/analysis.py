@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Analysis tools.
+Analysis tools: light-curve loading and Lomb-Scargle periodogram analysis.
 """
 
 import os

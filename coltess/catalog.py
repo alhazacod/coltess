@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Create and query gaiadr3 catalog
-and get star coordinates.
+Create and query Gaia DR3 catalogs and resolve star coordinates.
 """
 
 from coltess.core import StarData

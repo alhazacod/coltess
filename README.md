@@ -1,7 +1,7 @@
 # Coltess - TESS FFI Photometry Pipeline
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue)](https://www.python.org/downloads/)
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL_v3.0-blue)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL_v3.0-blue)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 **Coltess** is a lightweight Python package for extracting light curves from TESS (Transiting Exoplanet Survey Satellite) Full Frame Images (FFIs). 
 
@@ -9,9 +9,10 @@
 
 - 🌟 **Automated catalog generation** from Gaia DR3
 - 📥 **Direct FFI downloads** from MAST archive
-- 🔭 **Aperture photometry** with local background subtraction
-- ⚡ **Parallel processing** for analyzing thousands of images efficiently
-- 📊 **Periodogram analysis** using Lomb-Scargle with error weighting and false alarm probability
+- 🔭 **Aperture photometry** with local background subtraction and centroid refinement
+- ⚡ **Parallel processing** for analyzing thousands of images efficiently and **automatic resume** after interruption
+- 🖼️ **Local-image analysis** of your own FITS folders or single files (`process_local_images_parallel`, `analyze_image`)
+- 📊 **Periodogram analysis** using Lomb-Scargle with error weighting, false alarm probability and period uncertainty
 - 🎯 **Simple API** designed for both interactive and scripted workflows
 
 
@@ -38,29 +39,30 @@
 
 ## Installation
 
-### From PyPI (not published yet)
+### From PyPI
 ```bash
 pip install coltess
 ```
 
 ### From source
 ```bash
-git clone https://github.com/yourusername/coltess.git
+git clone https://github.com/alhazacod/coltess.git
 cd coltess
 pip install -e .
 ```
 
 ### Dependencies
 
-Core requirements:
+Core requirements (installed automatically):
 - numpy
 - pandas
 - astropy >= 5.0
 - astroquery
 - photutils >= 1.5
 - scipy
-- matplotlib
 - requests
+
+Development and examples: matplotlib, ipython, black, ruff, mypy (`pip install -e ".[dev]"`)
 
 ## Quick Start
 
@@ -128,118 +130,6 @@ times, fluxes, flux_errors = load_photometry_data("photometry.csv", star)
 ```
 
 
-## API Reference
-
-### Core Classes
-
-#### `StarData`
-Container for star information and photometry data.
-
-**Attributes:**
-- `name` (str): Star identifier
-- `ra` (float): Right ascension in degrees
-- `dec` (float): Declination in degrees
-- `gaia_id` (str, optional): Gaia DR3 source ID
-- `times` (np.ndarray, optional): Observation times (JD)
-- `fluxes` (np.ndarray, optional): Measured fluxes
-
-#### `TessPhotometry`
-Main photometry processing class.
-
-**Parameters:**
-- `aperture_radius` (int): Aperture radius in pixels (default: 10)
-- `annulus_inner` (int): Inner annulus radius (default: 12)
-- `annulus_outer` (int): Outer annulus radius (default: 14)
-- `zeropoint` (float): Magnitude zeropoint (default: 20.44)
-
-**Methods:**
-- `process_image(fits_file, catalog_file, target_star, max_sep_arcsec)`: Process single FITS image, returns the target row as an astropy Table (or None)
-- `load_catalog(catalog_file)`: Load Gaia catalog from CSV
-
-#### `analyze_image(fits_file, catalog_file, target_star, max_sep_arcsec=0.5)`
-Convenience wrapper around `TessPhotometry().process_image` for single local FITS images.
-
-**Returns:** astropy Table with the target's photometry row, or None if not detected
-
-### Catalog Functions
-
-#### `create_catalog(star_name, radius_arcmin, output_file)`
-Create Gaia DR3 catalog centered on target star.
-
-**Returns:** `StarData` object with resolved coordinates
-
-#### `get_star(name)`
-Resolve star name via SIMBAD.
-
-**Returns:** `StarData` object
-
-#### `query_gaia_catalog(star, radius_arcmin)`
-Query Gaia DR3 around sky position.
-
-**Returns:** pandas DataFrame with sources
-
-### Download Functions
-
-#### `get_tess_sectors(star)`
-Find TESS sectors covering target.
-
-**Returns:** pandas DataFrame with sector information
-
-#### `download_tess_sector_script(sector)`
-Download official MAST download script for sector.
-
-**Returns:** Path to shell script
-
-#### `download_tess_image(shell_command, output_dir)`
-Download single TESS FFI using curl command.
-
-**Returns:** Path to downloaded FITS file
-
-### Analysis Functions
-
-#### `load_photometry_data(csv_path, target_star, max_sep_arcsec)`
-Load light curve from a combined photometry CSV file (or a directory of per-frame CSVs).
-
-**Returns:** Tuple of (times, fluxes, flux_errors) as numpy arrays, sorted by time
-
-#### `compute_periodogram(times, fluxes, flux_errors=None, min_period=0.1, max_period=10.0, oversampling=5.0)`
-Compute Lomb-Scargle periodogram with optional error weighting and false alarm probability.
-
-**Parameters:**
-- `times`: Observation times (numpy array)
-- `fluxes`: Measured fluxes (numpy array)  
-- `flux_errors`: 1-sigma flux uncertainties (optional, numpy array)
-- `min_period`: Minimum period to search (days, default: 0.1)
-- `max_period`: Maximum period to search (days, default: 10.0)
-- `oversampling`: Oversampling factor for frequency grid (default: 5.0)
-
-**Returns:** Dictionary containing:
-- `periods`: Array of periods (days)
-- `power`: Array of periodogram power
-- `frequency`: Array of frequencies (1/days)
-- `peak_indices`: List of peak indices sorted by power
-- `primary_period`: Best period or None
-- `primary_period_uncertainty`: 1-sigma uncertainty or None  
-- `primary_fap`: False alarm probability (Baluev 2008) or None
-- `secondary_period`: Second best period or None
-
-### Parallel Processing
-
-#### `process_images_parallel(script_file, catalog_file, star, output_file=None, start_idx=None, max_workers=None, keep_images_dir=None)`
-Process TESS images in parallel.
-
-Automatically downloads, analyzes, and cleans up temporary files for each image. Photometry rows
-(with `SECTOR` and `CURL` columns) are appended to a single CSV file under a file lock. If the
-output file already has data, processing resumes automatically after the last processed image
-(pass `start_idx` to override).
-
-#### `process_local_images_parallel(fits_dir, catalog_file, star, output_file=None, max_workers=None, keep_images_dir=None, pattern="*.fits")`
-Analyze FITS images already stored locally, in parallel.
-
-Photometry rows (with the FITS header `SECTOR` and the local file path in the `CURL` column) are
-appended to a single CSV file under a file lock. Images whose path is already in the output file
-are skipped, so re-running resumes automatically.
-
 ## How It Works
 
 ### Photometry Pipeline
@@ -263,14 +153,15 @@ Flux uncertainties are calculated including:
 
 The formula used is:
 ```
-σ_flux = √(flux/gain + A_ap×σ_sky² + A_ap×σ_sky²/A_ann)
+σ_flux = √(F/g + n_ap × (1 + n_ap/n_ann) × σ_sky²)
 ```
 
 Where:
-- `gain = 5.22 e⁻/ADU` (TESS nominal)
-- `A_ap` = aperture area
-- `A_ann` = annulus area
-- `σ_sky` = background standard deviation
+- `F` = background-subtracted flux of the source
+- `g` = effective gain: 5.22 e⁻/ADU for ADU images, or the exposure time when the FFI is in e⁻/s units (detected automatically from the header)
+- `n_ap` = aperture area (pixels)
+- `n_ann` = annulus area (pixels)
+- `σ_sky` = background standard deviation (σ-clipped, σ=3)
 
 
 ### Periodogram Analysis
@@ -305,10 +196,11 @@ Contributions are welcome! Please:
 If you use Coltess in your research, please cite:
 
 ```bibtex
-@software{coltess2025,
+@software{coltess2026,
   author = {Manuel Garcia},
   title = {Curves of Light from TESS (COLTESS): photometry tool for TESS FFIs},
   year = {2026},
+  version = {0.1.0},
   url = {https://github.com/alhazacod/coltess}
 }
 ```
@@ -336,11 +228,6 @@ GPL-3.0-or-later - see LICENSE file for details
 - 📧 Email: mangarciama@unal.edu.co
 - 🐛 Issues: [GitHub Issues](https://github.com/alhazacod/coltess/issues)
 - 📖 Documentation: (coming soon)
-
-## Roadmap
-
-- [ ] Write documentation.
-- [ ] Use logging instead of prints.
 
 ---
 
