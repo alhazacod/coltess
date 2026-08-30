@@ -227,7 +227,7 @@ GPL-3.0-or-later - see LICENSE file for details
 
 - 📧 Email: mangarciama@unal.edu.co
 - 🐛 Issues: [GitHub Issues](https://github.com/alhazacod/coltess/issues)
-- 📖 Documentation: [API reference](docs/index.html) (generated with pdoc)
+- 📖 Documentation: [API reference](https://alhazacod.github.io/coltess) (generated with pdoc)
 
 ---
 
