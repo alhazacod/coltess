@@ -55,6 +55,7 @@ dev = [
     "black",
     "ruff",
     "mypy",
+    "pdoc",
 ]
 
 [tool.setuptools]
