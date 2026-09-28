@@ -1,0 +1,10 @@
+# Source distribution contents.
+#
+# setuptools auto-includes tests/test*.py but NOT tests/conftest.py, which
+# would leave the shipped suite un-runnable. Include the whole test suite
+# (Python files only) so downstream packagers can run the tests.
+#
+# The examples/ tree is intentionally NOT shipped: it contains large
+# generated CSVs and sector download scripts. Users are pointed at the
+# GitHub repository instead.
+recursive-include tests *.py
