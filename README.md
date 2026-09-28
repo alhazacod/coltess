@@ -3,6 +3,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL_v3.0-blue)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
+[![VIEW SITE - READ DOCUMENTATION](https://img.shields.io/badge/VIEW_SITE-READ_DOCUMENTATION-2ea44f?style=for-the-badge)](https://alhazacod.github.io/coltess/coltess.html)
+
 **Coltess** is a lightweight Python package for extracting light curves from TESS (Transiting Exoplanet Survey Satellite) Full Frame Images (FFIs). 
 
 ## Features

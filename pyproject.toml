@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Curves of Light from TESS (COLTESS): photometry tool for TESS FFIs"
 readme = "README.md"
 authors = [
-    { name = "Manuel Garcia", email = "alhazacod@proton.me" }
+    { name = "Manuel Garcia", email = "mangarciama@unal.edu.co" }
 ]
 requires-python = ">=3.10"
 license = "GPL-3.0-or-later"
@@ -25,7 +25,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -34,13 +33,14 @@ classifiers = [
 ]
 
 dependencies = [
-    "numpy",
-    "pandas",
-    "astropy>=5.0",
-    "astroquery",
+    "numpy>=1.23",
+    "pandas>=1.5",
+    "astropy>=6.1",
+    "astroquery>=0.4.6",
     "photutils>=1.5",
-    "scipy",
-    "requests",
+    "scipy>=1.9",
+    "requests>=2.28",
+    "matplotlib>=3.6",
 ]
 
 [project.urls]
@@ -56,11 +56,25 @@ dev = [
     "ruff",
     "mypy",
     "pdoc",
+    "pytest",
+]
+test = [
+    "pytest>=7",
 ]
 
 [tool.setuptools]
 packages = ["coltess"]
 license-files = ["LICENSE"]
+
+[tool.setuptools.package-data]
+coltess = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "network: tests that download real TESS data (opt-in via COLTESS_NETWORK_TESTS=1)",
+]
 
 [tool.setuptools.dynamic]
 version = { attr = "coltess.__version__" }
