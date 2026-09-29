@@ -51,9 +51,6 @@ poster/*
 # Jupyter
 .ipynb_checkpoints/
 
-# Documentation
-docs/build/
-
 # Testing
 .pytest_cache/
 .coverage
@@ -66,3 +63,6 @@ tess_images/
 csv_results/
 run_*/
 tesscurl_*.sh
+
+# DEV 
+RELEASING.md
